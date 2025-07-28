@@ -73,7 +73,7 @@ const SignInForm = ({ onSwitch }: { onSwitch: () => void }) => {
     <div className="w-full flex items-center justify-center min-h-screen bg-gray-50">
       <div className="flex flex-col items-center gap-6 py-3 px-10 lg:min-w-[566px] border border-gray-200 rounded-lg shadow-sm">
         <div className="flex flex-row gap-2 justify-center items-center">
-          <Image src="/logo.svg" alt="logo" height={32} width={38} />
+          <Image src="/next.svg" alt="logo" height={32} width={38} />
           <h2 className="font-bold ">Talk</h2>
         </div>
 

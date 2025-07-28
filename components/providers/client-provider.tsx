@@ -10,7 +10,7 @@ import AuthDialog from "../auth-dialog";
 import CreateMeetingPage from "../pages/create-meeting-page";
 import Navbar from "../nav-bar";
 import { Dialog } from "@radix-ui/react-dialog";
-import { DialogContent, DialogTrigger } from "../ui/dialog";
+import { DialogContent, DialogTitle, DialogTrigger } from "../ui/dialog";
 import { Button } from "../ui/button";
 import SignInForm from "../sign-in-form";
 import SignUpForm from "../sign-up-form";
@@ -60,6 +60,9 @@ const StreamProvider = ({ children }: { children: ReactNode }) => {
     return (
       <div>
         <Dialog open={!user}>
+          <DialogTitle className="text-center text-lg font-semibold">
+            {type === "login" ? "Welcome Back to talk" : "Join us on Talk"}
+          </DialogTitle>
           <DialogTrigger asChild>
             <Button variant="outline" className="text-center rounded-full">
               {type === "login" ? "Sign In" : "Sign Up"}
