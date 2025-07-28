@@ -1,12 +1,10 @@
 import { buttonClassName } from "@/components/button";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
+import { useParams } from "next/navigation";
 
-interface PageProps {
-  params: { id: string };
-}
-
-export default function MeetingLeft({ params: { id } }: PageProps) {
+export default function MeetingLeft() {
+  const { id } = useParams();
   return (
     <div className="flex flex-col justify-center items-center gap-3">
       <p className="font-bold">You left this meeting.</p>
