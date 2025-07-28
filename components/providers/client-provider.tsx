@@ -59,23 +59,11 @@ const StreamProvider = ({ children }: { children: ReactNode }) => {
     // User not logged in, show dialog
     return (
       <div>
-        <Dialog open={!user}>
-          <DialogTitle className="text-center text-lg font-semibold">
-            {type === "login" ? "Welcome Back to talk" : "Join us on Talk"}
-          </DialogTitle>
-          <DialogTrigger asChild>
-            <Button variant="outline" className="text-center rounded-full">
-              {type === "login" ? "Sign In" : "Sign Up"}
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            {type === "login" ? (
-              <SignInForm onSwitch={() => setType("register")} />
-            ) : (
-              <SignUpForm onSwitch={() => setType("login")} />
-            )}
-          </DialogContent>
-        </Dialog>
+        {type === "login" ? (
+          <SignInForm onSwitch={() => setType("register")} />
+        ) : (
+          <SignUpForm onSwitch={() => setType("login")} />
+        )}
       </div>
     );
   }
