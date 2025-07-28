@@ -60,7 +60,7 @@ const SignInForm = ({ onSwitch }: { onSwitch: () => void }) => {
       });
 
       toast.success("Signed in successfully.");
-      router.push("/");
+      router.refresh();
     } catch (error) {
       console.log(error);
       toast.error(`There was an error: ${error}`);

@@ -64,7 +64,7 @@ const SignUpForm = ({ onSwitch }: { onSwitch: () => void }) => {
       }
 
       toast.success("Account created successfully. Please sign in.");
-      router.push("/");
+      router.refresh();
     } catch (error) {
       console.log(error);
       toast.error(`There was an error: ${error}`);

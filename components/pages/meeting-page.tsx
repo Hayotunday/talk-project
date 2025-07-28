@@ -10,6 +10,7 @@ import useStreamCall from "@/hooks/use-stream-call";
 import { getCurrentUser } from "@/lib/actions/auth.action";
 import {
   CallingState,
+  CallEndedEvent,
   DeviceSettings,
   StreamCall,
   StreamTheme,
@@ -19,7 +20,7 @@ import {
 import { Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { arrayUnion, doc, updateDoc } from "firebase/firestore";
+import { arrayUnion, doc, onSnapshot, updateDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase/client";
 
 interface MeetingPageProps {
@@ -76,7 +77,31 @@ function MeetingScreen({ meetingId }: { meetingId: string }) {
   const callEndedAt = useCallEndedAt();
   const callStartsAt = useCallStartsAt();
 
+  const [callHasEnded, setCallHasEnded] = useState(!!callEndedAt);
   const [setupComplete, setSetupComplete] = useState(false);
+
+  useEffect(() => {
+    const handleCallEnded = async (event: CallEndedEvent) => {
+      console.log("Call ended event on client:", event);
+      setCallHasEnded(true);
+
+      // Trigger the backend process to fetch and save the transcription
+      try {
+        await fetch("/api/stream-transcript", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ callId: call.id, callType: call.type }),
+        });
+      } catch (error) {
+        console.error(
+          "Failed to trigger backend processing for ended call:",
+          error
+        );
+      }
+    };
+    call.on("call.ended", handleCallEnded);
+    return () => call.off("call.ended", handleCallEnded);
+  }, [call]);
 
   async function handleSetupComplete() {
     try {
@@ -96,7 +121,7 @@ function MeetingScreen({ meetingId }: { meetingId: string }) {
 
   const callIsInFuture = callStartsAt && new Date(callStartsAt) > new Date();
 
-  const callHasEnded = !!callEndedAt;
+  // const callHasEnded = !!callEndedAt;
 
   if (callHasEnded) {
     return <MeetingEndedScreen meetingId={meetingId} />;
@@ -209,64 +234,56 @@ function UpcomingMeetingScreen() {
   );
 }
 
-// Updated MeetingEndedScreen to listen for Firebase updates
 function MeetingEndedScreen({ meetingId }: { meetingId: string }) {
-  const [summary, setSummary] = useState<string | null>(null);
-  const [recordingUrl, setRecordingUrl] = useState<string | null>(null);
-  const [fullTranscription, setFullTranscription] = useState<string | null>(
-    null
-  );
-  const [loadingAssets, setLoadingAssets] = useState(true);
-  const [errorFetchingAssets, setErrorFetchingAssets] = useState(false);
+  const [transcription, setTranscription] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [requestedTranscript, setRequestedTranscript] = useState(false);
 
   useEffect(() => {
-    // Reference to the specific meeting document in Firestore
     const meetingRef = doc(db, "meetings", meetingId);
 
-    // Set up a real-time listener for changes to this document
     const unsubscribe = onSnapshot(
       meetingRef,
-      (docSnap) => {
+      async (docSnap) => {
         if (docSnap.exists()) {
-          const meetingData = docSnap.data();
-          // Check if summary and recordingUrl (and optionally fullTranscription) are available
-          if (meetingData.summary && meetingData.recordingUrl) {
-            setSummary(meetingData.summary);
-            setRecordingUrl(meetingData.recordingUrl);
-            setFullTranscription(meetingData.fullTranscription || null); // Handle optional fullTranscription
-            setLoadingAssets(false);
-            setErrorFetchingAssets(false); // Clear error if assets are now available
+          const data = docSnap.data();
+          if (data.transcription && data.transcription.trim() !== "") {
+            setTranscription(data.transcription);
+            setIsLoading(false);
           } else {
-            // Assets not yet available, keep loading state
-            setLoadingAssets(true);
-            setSummary(null);
-            setRecordingUrl(null);
-            setFullTranscription(null);
-            setErrorFetchingAssets(false); // Clear any previous error if data is now loading
+            setTranscription(null);
+            setIsLoading(true);
+            // If transcription is missing and we haven't requested it yet, trigger the API
+            if (!requestedTranscript) {
+              setRequestedTranscript(true);
+              try {
+                await fetch("/api/stream-transcript", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ callId: meetingId }),
+                });
+              } catch (error) {
+                console.error(
+                  "Failed to request transcript generation:",
+                  error
+                );
+                setIsLoading(false);
+              }
+            }
           }
         } else {
-          // Meeting document not found (this should ideally not happen for an existing meeting)
-          console.error("Meeting document not found for ID:", meetingId);
-          setLoadingAssets(false);
-          setErrorFetchingAssets(true);
-          setSummary("Meeting details not found.");
+          console.error("Meeting document not found.");
+          setIsLoading(false);
         }
       },
       (error) => {
-        // Handle errors from the Firestore listener
-        console.error(
-          "Error listening to meeting document in Firebase:",
-          error
-        );
-        setLoadingAssets(false);
-        setErrorFetchingAssets(true);
-        setSummary("Error retrieving meeting details from Firebase.");
+        console.error("Error fetching transcription:", error);
+        setIsLoading(false);
       }
     );
 
-    // Cleanup the listener when the component unmounts
     return () => unsubscribe();
-  }, [meetingId]); // Re-run effect if meetingId changes
+  }, [meetingId, requestedTranscript]);
 
   return (
     <div className="flex flex-col items-center gap-6">
@@ -274,58 +291,21 @@ function MeetingEndedScreen({ meetingId }: { meetingId: string }) {
       <Link href="/" className={buttonClassName}>
         Go home
       </Link>
-      <div className="space-y-3">
-        <h2 className="text-center text-xl font-bold">Meeting Assets</h2>
-        {loadingAssets && (
-          <p className="text-gray-600">
-            Generating meeting summary, fetching recording, and transcription...
-            This may take a moment.
+      <div className="w-full max-w-4xl space-y-3">
+        <h2 className="text-center text-xl font-bold">Transcription</h2>
+        {isLoading && <p className="text-center">Loading transcription...</p>}
+        {!isLoading && !transcription && (
+          <p className="text-center">
+            No transcription available for this meeting.
           </p>
         )}
-        {errorFetchingAssets && (
-          <p className="text-red-500">
-            {summary ||
-              "An error occurred while fetching meeting assets. Please try again later."}
-          </p>
-        )}
-
-        {/* Display Summary */}
-        {summary && !loadingAssets && !errorFetchingAssets && (
-          <div className="p-4 border rounded-md bg-gray-100 dark:bg-gray-800 text-left w-full max-w-2xl">
-            <h3 className="font-semibold mb-2">Meeting Summary:</h3>
-            <p className="whitespace-pre-wrap">{summary}</p>
-          </div>
-        )}
-
-        {/* Display Recording Link */}
-        {recordingUrl && !loadingAssets && !errorFetchingAssets && (
-          <div className="p-4 border rounded-md bg-gray-100 dark:bg-gray-800 text-left w-full max-w-2xl">
-            <h3 className="font-semibold mb-2">Meeting Recording:</h3>
-            <p>
-              <a
-                href={recordingUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-blue-500 hover:underline"
-              >
-                View Recording
-              </a>
+        {transcription && (
+          <div className="p-4 border rounded-md bg-gray-100 dark:bg-gray-800 text-left">
+            <p className="whitespace-pre-wrap text-sm max-h-96 overflow-y-auto border border-gray-300 p-2 rounded">
+              {transcription}
             </p>
           </div>
         )}
-
-        {/* Display Full Transcription (optional, with scroll) */}
-        {fullTranscription && !loadingAssets && !errorFetchingAssets && (
-          <div className="p-4 border rounded-md bg-gray-100 dark:bg-gray-800 text-left w-full max-w-2xl">
-            <h3 className="font-semibold mb-2">Full Transcription:</h3>
-            <p className="whitespace-pre-wrap text-sm max-h-60 overflow-y-auto border border-gray-300 p-2 rounded">
-              {fullTranscription}
-            </p>
-          </div>
-        )}
-
-        {/* This RecordingsList component might fetch other recordings or be empty depending on its implementation */}
-        <RecordingsList />
       </div>
     </div>
   );

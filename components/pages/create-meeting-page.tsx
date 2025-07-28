@@ -67,6 +67,7 @@ export default function CreateMeetingPage() {
         participants: [user.uid],
         createdAt: new Date(),
         summary: "",
+        transcription: "",
       });
       toast.success("Meeting Created Successfully!");
 

@@ -14,6 +14,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { signOut } from "@/lib/actions/auth.action";
+import AuthDialog from "./auth-dialog";
 
 export default function Navbar() {
   const router = useRouter();
@@ -31,7 +32,7 @@ export default function Navbar() {
     try {
       await signOut();
       toast.success("Signed out successfully!");
-      router.push("/auth");
+      router.push("/");
     } catch (error) {
       toast.error("Sign-out failed.");
       console.error(error);
@@ -63,9 +64,6 @@ export default function Navbar() {
                 <DropdownMenuItem asChild>
                   <Link href="/profile">Profile</Link>
                 </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link href="/history">History</Link>
-                </DropdownMenuItem>
                 <DropdownMenuItem onClick={handleSignOut}>
                   Log Out
                 </DropdownMenuItem>
@@ -73,9 +71,7 @@ export default function Navbar() {
             </DropdownMenu>
           </div>
         ) : (
-          <Button asChild>
-            <Link href="/auth">Sign In</Link>
-          </Button>
+          <AuthDialog />
         )}
       </div>
     </header>
