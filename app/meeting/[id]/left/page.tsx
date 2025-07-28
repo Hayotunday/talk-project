@@ -1,3 +1,5 @@
+"use client";
+
 import { buttonClassName } from "@/components/button";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
