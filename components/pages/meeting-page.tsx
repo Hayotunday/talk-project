@@ -4,7 +4,6 @@ import AudioVolumeIndicator from "@/components/audio-volume-indicator";
 import Button, { buttonClassName } from "@/components/button";
 import FlexibleCallLayout from "@/components/flexible-call-layout";
 import PermissionPrompt from "@/components/permission-prompt";
-import RecordingsList from "@/components/recordings-list";
 import useLoadCall from "@/hooks/use-load-calls";
 import useStreamCall from "@/hooks/use-stream-call";
 import { getCurrentUser } from "@/lib/actions/auth.action";
@@ -235,9 +234,10 @@ function UpcomingMeetingScreen() {
 }
 
 function MeetingEndedScreen({ meetingId }: { meetingId: string }) {
-  const [transcription, setTranscription] = useState<string | null>(null);
+  const [summary, setSummary] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [requestedTranscript, setRequestedTranscript] = useState(false);
+  const [meetingExists, setMeetingExists] = useState(true);
 
   useEffect(() => {
     const meetingRef = doc(db, "meetings", meetingId);
@@ -246,14 +246,12 @@ function MeetingEndedScreen({ meetingId }: { meetingId: string }) {
       meetingRef,
       async (docSnap) => {
         if (docSnap.exists()) {
+          setMeetingExists(true);
           const data = docSnap.data();
-          if (data.transcription && data.transcription.trim() !== "") {
-            setTranscription(data.transcription);
-            setIsLoading(false);
-          } else {
-            setTranscription(null);
+          // If summary is missing or empty and we haven't requested transcript yet, trigger the API
+          if (!data.summary || data.summary.trim() === "") {
+            setSummary(null);
             setIsLoading(true);
-            // If transcription is missing and we haven't requested it yet, trigger the API
             if (!requestedTranscript) {
               setRequestedTranscript(true);
               try {
@@ -264,26 +262,59 @@ function MeetingEndedScreen({ meetingId }: { meetingId: string }) {
                 });
               } catch (error) {
                 console.error(
-                  "Failed to request transcript generation:",
+                  "Failed to request transcript/summary generation:",
                   error
                 );
                 setIsLoading(false);
               }
             }
+          } else {
+            setSummary(data.summary);
+            setIsLoading(false);
           }
         } else {
-          console.error("Meeting document not found.");
+          setMeetingExists(false);
           setIsLoading(false);
         }
       },
       (error) => {
-        console.error("Error fetching transcription:", error);
+        console.error("Error fetching summary:", error);
         setIsLoading(false);
       }
     );
 
     return () => unsubscribe();
   }, [meetingId, requestedTranscript]);
+
+  // If the meeting document does not exist
+  if (!meetingExists) {
+    return (
+      <div className="flex flex-col items-center gap-6">
+        <p className="font-bold">Meeting not found.</p>
+        <Link href="/" className={buttonClassName}>
+          Go home
+        </Link>
+      </div>
+    );
+  }
+
+  // If summary is not available, meeting is still ongoing or summary is being generated
+  if (isLoading && !summary) {
+    return (
+      <div className="flex flex-col items-center gap-6">
+        <p className="font-bold">
+          The meeting is still ongoing or summary is being generated.
+        </p>
+        <p className="text-center">
+          The summary will be generated and available here once the meeting is
+          over.
+        </p>
+        <Link href="/" className={buttonClassName}>
+          Go home
+        </Link>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col items-center gap-6">
@@ -292,17 +323,14 @@ function MeetingEndedScreen({ meetingId }: { meetingId: string }) {
         Go home
       </Link>
       <div className="w-full max-w-4xl space-y-3">
-        <h2 className="text-center text-xl font-bold">Transcription</h2>
-        {isLoading && <p className="text-center">Loading transcription...</p>}
-        {!isLoading && !transcription && (
-          <p className="text-center">
-            No transcription available for this meeting.
-          </p>
+        <h2 className="text-center text-xl font-bold">Meeting Summary</h2>
+        {!summary && (
+          <p className="text-center">No summary available for this meeting.</p>
         )}
-        {transcription && (
+        {summary && (
           <div className="p-4 border rounded-md bg-gray-100 dark:bg-gray-800 text-left">
             <p className="whitespace-pre-wrap text-sm max-h-96 overflow-y-auto border border-gray-300 p-2 rounded">
-              {transcription}
+              {summary}
             </p>
           </div>
         )}

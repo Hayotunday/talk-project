@@ -42,7 +42,15 @@ export default function Navbar() {
   return (
     <header className="shadow">
       <div className="mx-auto flex h-14 max-w-5xl items-center justify-between p-3 font-medium">
-        <Link href="/">New meeting</Link>
+        <Link href="/">
+          <Button
+            asChild
+            variant="outline"
+            className="text-center rounded-full"
+          >
+            New meeting
+          </Button>
+        </Link>
         {user ? (
           <div className="flex items-center gap-4">
             <span className="hidden sm:block">
@@ -63,6 +71,9 @@ export default function Navbar() {
               <DropdownMenuContent>
                 <DropdownMenuItem asChild>
                   <Link href="/profile">Profile</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/history">History</Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={handleSignOut}>
                   Log Out

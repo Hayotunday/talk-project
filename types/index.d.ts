@@ -13,8 +13,7 @@ interface Meeting {
   createdBy: string;
   participants: string[];
   createdAt: Date;
-  startedAt: Date;
-  endedAt?: Date;
+  transcription?: string;
   summary?: string;
 }
 

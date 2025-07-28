@@ -21,39 +21,44 @@ export async function POST(req: Request) {
 
     const streamClient = new StreamClient(STREAM_API_KEY, STREAM_API_SECRET);
 
-    // It can take a moment for the transcription to be ready.
-    // It's still a good idea to have a delay, or ideally, use webhooks for production.
-    await new Promise((resolve) => setTimeout(resolve, 20000)); // Increased delay as a precaution
+    await new Promise((resolve) => setTimeout(resolve, 30000)); // Increased delay as a precaution
 
     const call = streamClient.video.call(callType, callId);
-
-    // Optional: Fetch call details to ensure it's valid if needed for other operations
-    // try {
-    //   await call.get();
-    // } catch (e) {
-    //   console.error(`Error fetching call ${callId}:`, e);
-    //   return NextResponse.json(
-    //     { error: "Call not found or accessible" },
-    //     { status: 404 }
-    //   );
-    // }
-
-    // Corrected: Use call.listTranscriptions()
     const { transcriptions } = await call.listTranscriptions();
 
     if (transcriptions.length > 0) {
-      // Assuming you want the first transcription if multiple exist
       const transcriptionUrl = transcriptions[0].url;
       if (transcriptionUrl) {
         const response = await fetch(transcriptionUrl);
         const transcriptionText = await response.text();
 
         const meetingRef = db.collection("meetings").doc(callId);
-        await meetingRef.update({
-          transcription: transcriptionText,
-        });
+        // await meetingRef.update({
+        //   transcription: transcriptionText,
+        // });
         // console.log(`Transcription: ${transcriptionText}`);
         console.log(`Transcription for call ${callId} saved to Firebase.`);
+
+        // Summarize the transcript and save summary
+        try {
+          // Build absolute URL for server-side fetch
+          const baseUrl =
+            process.env.NEXT_PUBLIC_BASE_URL ||
+            (process.env.VERCEL_URL && `https://${process.env.VERCEL_URL}`) ||
+            "http://localhost:3000";
+          const summaryRes = await fetch(`${baseUrl}/api/summarize`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ transcript: transcriptionText }),
+          });
+          const { summary } = await summaryRes.json();
+          if (summary) {
+            await meetingRef.update({ summary });
+            console.log(`Summary for call ${callId} saved to Firebase.`);
+          }
+        } catch (err) {
+          console.error("Failed to summarize transcript:", err);
+        }
       } else {
         console.log(`First transcription for call ${callId} has no URL.`);
       }
