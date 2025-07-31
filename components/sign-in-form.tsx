@@ -24,7 +24,13 @@ const signInFormSchema = () => {
   });
 };
 
-const SignInForm = ({ onSwitch }: { onSwitch: () => void }) => {
+const SignInForm = ({
+  onSwitch,
+  onAuthComplete,
+}: {
+  onSwitch: () => void;
+  onAuthComplete: () => void;
+}) => {
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
 
@@ -54,24 +60,36 @@ const SignInForm = ({ onSwitch }: { onSwitch: () => void }) => {
         return;
       }
 
-      await signIn({
+      const result = await signIn({
         email,
         idToken,
       });
 
-      toast.success("Signed in successfully.");
-      router.refresh();
-    } catch (error) {
-      console.log(error);
-      toast.error(`There was an error: ${error}`);
+      if (result?.success) {
+        toast.success("Signed in successfully.");
+        onAuthComplete();
+        router.refresh();
+      } else {
+        toast.error(result.message || "Sign in Failed. Please try again.");
+      }
+    } catch (error: any) {
+      let errorMessage = "An unknown error occurred. Please try again.";
+      if (error.code) {
+        switch (error.code) {
+          case "auth/invalid-credential":
+            errorMessage = "Invalid email or password.";
+            break;
+        }
+      }
+      toast.error(errorMessage);
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="w-full flex items-center justify-center min-h-screen bg-gray-50">
-      <div className="flex flex-col items-center gap-6 py-3 px-10 lg:min-w-[566px] border border-gray-200 rounded-lg shadow-sm">
+    <div className="w-full flex items-center justify-center bg-gray-50">
+      <div className="flex flex-col items-center gap-6 py-3 px-10 w-full border border-gray-200 rounded-lg shadow-sm">
         <div className="flex flex-row gap-2 justify-center items-center">
           <Image src="/next.svg" alt="logo" height={32} width={38} />
           <h2 className="font-bold ">Talk</h2>

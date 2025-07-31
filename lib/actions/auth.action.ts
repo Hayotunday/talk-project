@@ -25,8 +25,8 @@ export async function setSessionCookie(idToken: string) {
   });
 }
 
-export async function signUp(params: SignUpParams) {
-  const { uid, name, email, photo_url } = params;
+export async function signUp(params: SignUpParams & { idToken: string }) {
+  const { uid, name, email, photo_url, idToken } = params;
 
   try {
     let photo = photo_url;
@@ -62,9 +62,12 @@ export async function signUp(params: SignUpParams) {
       createdAt: new Date(),
     });
 
+    // Set session cookie to log the user in immediately
+    await setSessionCookie(idToken);
+
     return {
       success: true,
-      message: "Account created successfully. Please sign in.",
+      message: "Account created successfully.",
     };
   } catch (error: any) {
     console.error("Error creating user:", error);
@@ -88,17 +91,26 @@ export async function signIn(params: SignInParams) {
   const { email, idToken } = params;
 
   try {
-    const userRecord = await auth.getUserByEmail(email);
-    if (!userRecord)
+    const user = await auth.getUserByEmail(email);
+    if (!user)
       return {
         success: false,
         message: "User does not exist. Create an account.",
       };
 
-    await setSessionCookie(idToken);
-  } catch (error: any) {
-    console.log("");
+    // Also check if the user exists in your Firestore database
+    const userDoc = await db.collection("users").doc(user.uid).get();
+    if (!userDoc.exists) {
+      return {
+        success: false,
+        message: "User data not found. Please complete sign up.",
+      };
+    }
 
+    await setSessionCookie(idToken);
+    return { success: true };
+  } catch (error: any) {
+    console.error("Sign in failed:", error);
     return {
       success: false,
       message: "Failed to log into account. Please try again.",
@@ -143,7 +155,7 @@ export async function getCurrentUser(): Promise<User | null> {
       uid: userRecord.id,
     } as User;
   } catch (error) {
-    console.log(error);
+    console.error("Error verifying session cookie:", error);
 
     // Invalid or expired session
     return null;

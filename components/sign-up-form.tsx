@@ -21,11 +21,17 @@ const SignUpFormSchema = () => {
     name: z.string().min(3),
     email: z.string().email(),
     password: z.string().min(6, "Password must be at least 6 characters long"),
-    avatar: z.string().url().nonempty(),
+    avatar: z.string().url().optional().or(z.literal("")),
   });
 };
 
-const SignUpForm = ({ onSwitch }: { onSwitch: () => void }) => {
+const SignUpForm = ({
+  onSwitch,
+  onAuthComplete,
+}: {
+  onSwitch: () => void;
+  onAuthComplete: () => void;
+}) => {
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
 
@@ -51,31 +57,46 @@ const SignUpForm = ({ onSwitch }: { onSwitch: () => void }) => {
         password
       );
 
+      const idToken = await userCredential.user.getIdToken();
+      if (!idToken) {
+        toast.error("Sign up failed. Please try again.");
+        return;
+      }
+
       const result = await signUp({
         uid: userCredential.user.uid,
         name: name!,
         email,
-        photo_url: avatar,
+        photo_url: avatar || "",
+        idToken,
       });
 
       if (!result.success) {
-        toast.error(result.message);
-        return;
+        return toast.error(result.message);
       }
 
-      toast.success("Account created successfully. Please sign in.");
+      toast.success("Account created and signed in successfully.");
+      onAuthComplete();
       router.refresh();
-    } catch (error) {
-      console.log(error);
-      toast.error(`There was an error: ${error}`);
+    } catch (error: any) {
+      console.error("Sign up failed:", error);
+      if (error.code === "auth/email-already-in-use") {
+        toast.error("This email address is already in use by another account.");
+      } else if (error.code === "auth/weak-password") {
+        toast.error(
+          "The password is too weak. Please use a stronger password."
+        );
+      } else {
+        toast.error("Failed to create account. Please try again.");
+      }
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="w-full flex items-center justify-center min-h-screen bg-gray-50">
-      <div className="flex flex-col items-center gap-6 py-5 px-10 lg:min-w-[566px] border border-gray-200 rounded-lg shadow-sm">
+    <div className="w-full flex items-center justify-center bg-gray-50">
+      <div className="flex flex-col items-center gap-6 py-5 px-10 w-full border border-gray-200 rounded-lg shadow-sm">
         <div className="flex flex-row gap-2 justify-center items-center">
           <Image src="/next.svg" alt="logo" height={32} width={38} />
           <h2 className="font-bold ">Talk</h2>

@@ -1,8 +1,9 @@
-import { ReactNode } from "react";
 import type { Metadata } from "next";
 import { Toaster } from "@/components/ui/sonner";
-import ClientProvider from "@/components/providers/client-provider";
+import StreamProvider from "@/components/providers/stream-provider";
+import AuthAlert from "@/components/auth-alert";
 import Navbar from "@/components/nav-bar";
+import { getCurrentUser } from "@/lib/actions/auth.action";
 
 import "./globals.css";
 import "@stream-io/video-react-sdk/dist/css/styles.css";
@@ -21,18 +22,21 @@ export const metadata: Metadata = {
   ],
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const user = await getCurrentUser();
+
   return (
     <html lang="en">
       <body className="scroll-smooth antialiased">
-        <ClientProvider>
-          <Navbar />
+        <StreamProvider>
+          <Navbar user={user} />
+          <AuthAlert />
           <main className="mx-auto max-w-5xl px-3 py-6">{children}</main>
-        </ClientProvider>
+        </StreamProvider>
         <Toaster />
       </body>
     </html>

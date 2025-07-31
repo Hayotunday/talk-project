@@ -17,8 +17,6 @@ import { generateRandomId } from "@/lib/utils";
 
 export default function CreateMeetingPage() {
   const [descriptionInput, setDescriptionInput] = useState("");
-  const [startInstantly, setStartInstantly] = useState(true);
-  const [participantsInput, setParticipantsInput] = useState("");
   const [user, setUser] = useState<User | null>();
 
   const [call, setCall] = useState<Call>();
@@ -34,7 +32,12 @@ export default function CreateMeetingPage() {
   }, []);
 
   async function createMeeting() {
-    if (!client || !user) {
+    if (!user) {
+      toast.error("User needs to sign in to create a meeting.");
+      return;
+    }
+    if (!client) {
+      toast.error("Something went wrong. Please try again later.");
       return;
     }
 
@@ -74,30 +77,30 @@ export default function CreateMeetingPage() {
       setCall(call);
     } catch (error) {
       console.error(error);
-      alert("Something went wrong. Please try again later.");
+      if (!user) {
+        toast.error("User needs to sign in to create a meeting.");
+        return;
+      }
+      if (!client) {
+        toast.error("Something went wrong. Please try again later.");
+        return;
+      }
     }
-  }
-
-  if (!client || !user) {
-    return <Loader2 className="mx-auto animate-spin" />;
   }
 
   return (
     <div className="flex flex-col items-center space-y-6">
-      <h1 className="text-center text-2xl font-bold">
-        Welcome {user.display_name}!
-      </h1>
+      {user && (
+        <h1 className="text-center text-2xl font-bold">
+          Welcome {user.display_name}!
+        </h1>
+      )}
       <div className="mx-auto w-80 space-y-6 rounded-md bg-slate-100 p-5">
         <h2 className="text-xl font-bold">Create a new meeting</h2>
         <DescriptionInput
           value={descriptionInput}
           onChange={setDescriptionInput}
         />
-        {/* <StartTimeInput value={startInstantly} onChange={setStartInstantly} /> */}
-        {/* <ParticipantsInput
-          value={participantsInput}
-          onChange={setParticipantsInput}
-        /> */}
         <Button onClick={createMeeting} className="w-full">
           Create meeting
         </Button>
@@ -144,89 +147,6 @@ function DescriptionInput({ value, onChange }: DescriptionInputProps) {
   );
 }
 
-interface StartTimeInputProps {
-  value: boolean;
-  onChange: (value: boolean) => void;
-}
-
-function StartTimeInput({ value, onChange }: StartTimeInputProps) {
-  const [active, setActive] = useState(false);
-
-  return (
-    <div className="space-y-2">
-      <div className="font-medium">Meeting start:</div>
-      <label className="flex items-center gap-1.5">
-        <input
-          type="radio"
-          checked={!active}
-          onChange={() => {
-            setActive(false);
-            onChange(true);
-          }}
-        />
-        Start meeting immediately
-      </label>
-      <label className="flex flex-col jsutify-center gap-1.5">
-        <div className="flex items-center gap-1.5">
-          <input
-            type="radio"
-            checked={active}
-            onChange={() => {
-              setActive(true);
-              onChange(false);
-            }}
-          />
-          Schedule meeting for later
-        </div>
-        <sub className="text-xs text-red-500 text-center">
-          *link will be copied automatically
-        </sub>
-      </label>
-    </div>
-  );
-}
-
-interface ParticipantsInputProps {
-  value: string;
-  onChange: (value: string) => void;
-}
-
-function ParticipantsInput({ value, onChange }: ParticipantsInputProps) {
-  const [active, setActive] = useState(false);
-
-  return (
-    <div className="space-y-2">
-      <div className="font-medium">Participants:</div>
-      <label className="flex items-center gap-1.5">
-        <input
-          type="radio"
-          checked={!active}
-          onChange={() => {
-            setActive(false);
-            onChange("");
-          }}
-        />
-        Everyone with link can join
-      </label>
-      <label className="flex items-center gap-1.5">
-        <input type="radio" checked={active} onChange={() => setActive(true)} />
-        Private meeting
-      </label>
-      {active && (
-        <label className="block space-y-1">
-          <span className="font-medium">Participant emails</span>
-          <textarea
-            value={value}
-            onChange={(e) => onChange(e.target.value)}
-            placeholder="Enter participant email addresses separated by commas"
-            className="w-full rounded-md border border-gray-300 p-2"
-          />
-        </label>
-      )}
-    </div>
-  );
-}
-
 interface MeetingLinkProps {
   call: Call;
 }
@@ -254,17 +174,6 @@ function MeetingLink({ call }: MeetingLinkProps) {
           <Copy />
         </button>
       </div>
-      {/* <a
-        href={getMailToLink(
-          meetingLink,
-          call.state.startsAt,
-          call.state.custom.description
-        )}
-        target="_blank"
-        className="text-blue-500 hover:underline"
-      >
-        Send email invitation
-      </a> */}
     </div>
   );
 }

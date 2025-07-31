@@ -1,9 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
-import { getCurrentUser } from "@/lib/actions/auth.action";
+import { useRouter, usePathname } from "next/navigation";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -11,28 +9,20 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { signOut } from "@/lib/actions/auth.action";
 import AuthDialog from "./auth-dialog";
 
-export default function Navbar() {
+export default function Navbar({ user }: { user: User | null }) {
   const router = useRouter();
-  const [user, setUser] = useState<User | null>(null);
-
-  useEffect(() => {
-    async function fetchUser() {
-      const currentUser = await getCurrentUser();
-      setUser(currentUser);
-    }
-    fetchUser();
-  }, []);
+  const pathname = usePathname();
 
   const handleSignOut = async () => {
     try {
       await signOut();
       toast.success("Signed out successfully!");
-      router.push("/");
+      // Refresh the page to update the navbar and other server components
+      router.refresh();
     } catch (error) {
       toast.error("Sign-out failed.");
       console.error(error);
@@ -42,15 +32,13 @@ export default function Navbar() {
   return (
     <header className="shadow">
       <div className="mx-auto flex h-14 max-w-5xl items-center justify-between p-3 font-medium">
-        <Link href="/">
-          <Button
-            asChild
-            variant="outline"
-            className="text-center rounded-full"
-          >
-            New meeting
-          </Button>
+        <Link
+          href="/"
+          className="rounded-full flex items-center gap-2 text-center shadow shadow-gray-300 px-3 py-1.5"
+        >
+          {pathname !== "/" ? "Home" : "New meeting"}
         </Link>
+
         {user ? (
           <div className="flex items-center gap-4">
             <span className="hidden sm:block">

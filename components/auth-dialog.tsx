@@ -3,24 +3,42 @@
 import React from "react";
 import SignInForm from "@/components/sign-in-form";
 import SignUpForm from "@/components/sign-up-form";
-import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 
 const AuthDialog: React.FC = () => {
   const [type, setType] = React.useState<"login" | "register">("login");
+  const [open, setOpen] = React.useState(false);
+
+  const handleAuthComplete = () => {
+    setOpen(false);
+  };
+
   return (
     <div>
-      <Dialog>
+      <Dialog open={open} onOpenChange={setOpen}>
         <DialogTrigger asChild>
           <Button variant="outline" className="text-center rounded-full">
             {type === "login" ? "Sign In" : "Sign Up"}
           </Button>
         </DialogTrigger>
         <DialogContent>
+          <DialogTitle>{type === "login" ? "Sign In" : "Sign Up"}</DialogTitle>
           {type === "login" ? (
-            <SignInForm onSwitch={() => setType("register")} />
+            <SignInForm
+              onSwitch={() => setType("register")}
+              onAuthComplete={handleAuthComplete}
+            />
           ) : (
-            <SignUpForm onSwitch={() => setType("login")} />
+            <SignUpForm
+              onSwitch={() => setType("login")}
+              onAuthComplete={handleAuthComplete}
+            />
           )}
         </DialogContent>
       </Dialog>
@@ -29,4 +47,3 @@ const AuthDialog: React.FC = () => {
 };
 
 export default AuthDialog;
-// This component renders a simple authentication form with fields for username and password.
