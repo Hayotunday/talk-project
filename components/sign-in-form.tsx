@@ -55,7 +55,7 @@ const SignInForm = ({
       );
 
       const idToken = await userCredential.user.getIdToken();
-      console.log("idToken: ", idToken);
+      // console.log("idToken: ", idToken);
       if (!idToken) {
         toast.error("Sign in Failed. Please try again.");
         return;
@@ -65,7 +65,7 @@ const SignInForm = ({
         email,
         idToken,
       });
-      console.log("result: ", result);
+      // console.log("result: ", result);
 
       if (result?.success) {
         toast.success("Signed in successfully.");
