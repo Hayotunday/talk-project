@@ -4,7 +4,14 @@ import { useEffect, useState } from "react";
 import { db } from "@/lib/firebase/client";
 import { Loader2 } from "lucide-react";
 import jsPDF from "jspdf";
-import { collection, getDocs, query, orderBy } from "firebase/firestore";
+import {
+  collection,
+  getDocs,
+  query,
+  orderBy,
+  doc,
+  getDoc,
+} from "firebase/firestore";
 
 interface MeetingSummary {
   id: string;
@@ -12,7 +19,9 @@ interface MeetingSummary {
   summary: string;
   createdAt: any;
   createdBy: string;
+  createdByDisplayName?: string;
   participants: string[];
+  participantDisplayNames?: string[];
 }
 
 interface SummaryListProps {
@@ -33,24 +42,53 @@ export default function SummaryList({ filterByUserId }: SummaryListProps) {
         );
         const querySnapshot = await getDocs(q);
         const data: MeetingSummary[] = [];
-        querySnapshot.forEach((doc) => {
-          const d = doc.data();
-          // Only include meetings the user attended
+        for (const docSnap of querySnapshot.docs) {
+          const d = docSnap.data();
           if (
             !filterByUserId ||
             (Array.isArray(d.participants) &&
               d.participants.includes(filterByUserId))
           ) {
+            let createdByDisplayName = d.createdBy;
+            let participantDisplayNames: string[] = [];
+            try {
+              const creatorDocRef = doc(collection(db, "users"), d.createdBy);
+              const creatorDoc = await getDoc(creatorDocRef);
+              if (creatorDoc.exists()) {
+                createdByDisplayName =
+                  creatorDoc.data().display_name || d.createdBy;
+              }
+              // Fetch display names for participants using modular API
+              if (Array.isArray(d.participants)) {
+                const userDocs = await Promise.all(
+                  d.participants.map((uid: string) => {
+                    const userDocRef = doc(collection(db, "users"), uid);
+                    return getDoc(userDocRef);
+                  })
+                );
+                participantDisplayNames = userDocs.map((userDoc, idx) =>
+                  userDoc.exists()
+                    ? userDoc.data().display_name || d.participants[idx]
+                    : d.participants[idx]
+                );
+              }
+            } catch (e) {
+              createdByDisplayName = d.createdBy;
+              participantDisplayNames = d.participants || [];
+            }
+
             data.push({
-              id: doc.id,
+              id: docSnap.id,
               title: d.title || "",
               summary: d.summary || "",
               createdAt: d.createdAt,
               createdBy: d.createdBy,
+              createdByDisplayName,
               participants: d.participants || [],
+              participantDisplayNames,
             });
           }
-        });
+        }
         setSummaries(data);
       } catch (err) {
         setSummaries([]);
@@ -111,10 +149,13 @@ export default function SummaryList({ filterByUserId }: SummaryListProps) {
                   : new Date(meeting.createdAt).toLocaleString()}
               </span>
               <span>
-                <b>By:</b> {meeting.createdBy}
+                <b>By:</b> {meeting.createdByDisplayName || meeting.createdBy}
               </span>
               <span>
-                <b>Participants:</b> {meeting.participants.join(", ")}
+                <b>Participants:</b>{" "}
+                {meeting.participantDisplayNames
+                  ? meeting.participantDisplayNames.join(", ")
+                  : meeting.participants.join(", ")}
               </span>
             </div>
           </li>

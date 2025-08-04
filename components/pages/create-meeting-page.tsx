@@ -155,24 +155,25 @@ function MeetingLink({ call }: MeetingLinkProps) {
   const meetingLink = `${process.env.NEXT_PUBLIC_LOCAL_URL_ORIGIN}/meeting/${call.id}`;
 
   return (
-    <div className="flex flex-col items-center gap-3 text-center">
-      <div className="flex items-center gap-3">
+    <div className="flex flex-col items-center gap-3 text-center p-5 rounded-md shadow shadow-black">
+      <div className="flex items-center gap-3 cursor-pointer">
         <span>
           Invitation link: {"  "}
-          <Link href={meetingLink} className="font-medium">
+          <Link href={meetingLink} className="font-medium hover:underline">
             {meetingLink}
           </Link>
         </span>
 
-        <button
+        <Button
           title="Copy invitation link"
           onClick={() => {
             navigator.clipboard.writeText(meetingLink);
             toast.success("Meeting link copied to clipboard");
           }}
+          className=""
         >
-          <Copy />
-        </button>
+          <Copy className="w-3 h-3" />
+        </Button>
       </div>
     </div>
   );

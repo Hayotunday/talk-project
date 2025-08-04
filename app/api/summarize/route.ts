@@ -24,6 +24,10 @@ export async function POST(request: Request) {
         ${transcript}
         ---
         `,
+    }).catch((err) => {
+      // Log the error and throw for catch block
+      console.error("Gemini API error:", err);
+      throw err;
     });
 
     if (meetingId) {
@@ -36,9 +40,18 @@ export async function POST(request: Request) {
       { success: true, summary: questions },
       { status: 200 }
     );
-  } catch (error) {
+  } catch (error: any) {
+    // Log error details
     console.error("Error:", error);
-    return Response.json({ success: false, error: error }, { status: 500 });
+    // If error has a response, log it
+    if (error?.response) {
+      const errorText = await error.response.text?.();
+      console.error("API response:", errorText);
+    }
+    return Response.json(
+      { success: false, error: error?.message || error },
+      { status: 500 }
+    );
   }
 }
 

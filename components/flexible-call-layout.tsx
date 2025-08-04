@@ -28,11 +28,11 @@ export default function FlexibleCallLayout() {
   const router = useRouter();
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3 relative h-full w-full">
       <CallLayoutButtons layout={layout} setLayout={setLayout} />
       <CallLayoutView layout={layout} />
       {/* <CallControls onLeave={() => router.push(`/meeting/${call.id}/left`)} /> */}
-      <div className="flex flex-row justify-center items-center space-x-3 gap-2">
+      <div className="fixed bottom-3 left-0 right-0 mx-auto w-fit bg-[#19232d] rounded-full p-3 flex flex-row flex-wrap justify-center items-center space-x-3 gap-2">
         <ToggleAudioPublishingButton />
         <ToggleVideoPublishingButton />
         <ScreenShareButton />
