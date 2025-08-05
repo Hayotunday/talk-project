@@ -50,10 +50,18 @@ export async function POST(request: Request) {
     });
 
     // Save summary to Firestore
-
-    await db.collection("meetings").doc(callId).update({
-      summary,
-    });
+    try {
+      await db
+        .collection("meetings")
+        .doc(callId)
+        .set({ summary }, { merge: true });
+    } catch (dbError: any) {
+      console.error("Firestore error:", dbError?.message || dbError);
+      return Response.json(
+        { success: false, error: "Failed to save summary to Firestore" },
+        { status: 500 }
+      );
+    }
 
     console.log("Generated summary:", summary);
 
