@@ -5,15 +5,13 @@ export async function POST(request: NextRequest) {
 
   // Check for meeting ended event
   if (body.event_type === "call.ended") {
-    const meetingId = body.call.id;
-    const transcript = body.call.transcript; // Or fetch transcript if not included
+    const callId = body.call.id;
 
-    // Call your summary generation logic here
-    // For example, POST to your summarize API
+    // Call summarize API with callId only
     await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/summarize`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ transcript, meetingId }),
+      body: JSON.stringify({ callId }),
     });
   }
 

@@ -157,6 +157,21 @@ export default function SummaryList({ filterByUserId }: SummaryListProps) {
                   ? meeting.participantDisplayNames.join(", ")
                   : meeting.participants.join(", ")}
               </span>
+              <span>
+                <b>Meeting ID:</b> {meeting.id}
+              </span>
+              {/* If you want to show a clickable link, use below */}
+              {/* <span>
+                <b>Meeting Link:</b>{" "}
+                <a
+                  href={`/meeting/${meeting.id}`}
+                  className="text-blue-600 underline"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  {`/meeting/${meeting.id}`}
+                </a>
+              </span> */}
             </div>
           </li>
         ))}

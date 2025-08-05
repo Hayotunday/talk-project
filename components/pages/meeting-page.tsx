@@ -252,22 +252,6 @@ function MeetingEndedScreen({ meetingId }: { meetingId: string }) {
           if (!data.summary || data.summary.trim() === "") {
             setSummary(null);
             setIsLoading(true);
-            if (!requestedTranscript) {
-              setRequestedTranscript(true);
-              try {
-                await fetch("/api/stream-transcript", {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ callId: meetingId }),
-                });
-              } catch (error) {
-                console.error(
-                  "Failed to request transcript/summary generation:",
-                  error
-                );
-                setIsLoading(false);
-              }
-            }
           } else {
             setSummary(data.summary);
             setIsLoading(false);

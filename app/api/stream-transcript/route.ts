@@ -32,47 +32,19 @@ export async function POST(req: Request) {
         const response = await fetch(transcriptionUrl);
         const transcriptionText = await response.text();
 
+        // Optionally save to Firestore
         const meetingRef = db.collection("meetings").doc(callId);
-        // await meetingRef.update({
-        //   transcription: transcriptionText,
-        // });
-        // console.log(`Transcription: ${transcriptionText}`);
-        console.log(`Transcription for call ${callId} saved to Firebase.`);
+        await meetingRef.update({ transcription: transcriptionText });
 
-        // Summarize the transcript and save summary
-        try {
-          // Build absolute URL for server-side fetch
-          const baseUrl =
-            process.env.NEXT_PUBLIC_BASE_URL ||
-            (process.env.VERCEL_URL && `https://${process.env.VERCEL_URL}`) ||
-            "http://localhost:3000";
-          const summaryRes = await fetch(`${baseUrl}/api/summarize`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ transcript: transcriptionText }),
-          });
-          const { summary } = await summaryRes.json();
-          if (summary) {
-            await meetingRef.update({ summary });
-            console.log(`Summary for call ${callId} saved to Firebase.`);
-          }
-        } catch (err) {
-          console.error("Failed to summarize transcript:", err);
-        }
-      } else {
-        console.log(`First transcription for call ${callId} has no URL.`);
+        return NextResponse.json({ transcript: transcriptionText });
       }
-    } else {
-      console.log(`No transcriptions found for call ${callId}.`);
     }
-
-    return NextResponse.json({ success: true });
-  } catch (error) {
-    console.error("Error processing ended call:", error);
-    const errorMessage =
-      error instanceof Error ? error.message : "Unknown error";
+    return NextResponse.json({ transcript: null });
+  } catch (error: any) {
+    console.error("Error fetching transcript:", error);
+    const errorMessage = error?.message ?? "Unknown error";
     return NextResponse.json(
-      { error: "Failed to process call", details: errorMessage },
+      { transcript: null, error: errorMessage },
       { status: 500 }
     );
   }

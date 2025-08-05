@@ -4,10 +4,31 @@ import { google } from "@ai-sdk/google";
 import { db } from "@/lib/firebase/admin";
 
 export async function POST(request: Request) {
-  const { transcript, meetingId } = await request.json();
-
   try {
-    const { text: questions } = await generateText({
+    const { callId, meetingId } = await request.json();
+
+    // Fetch transcript from stream-transcript API
+    const baseUrl =
+      process.env.NEXT_PUBLIC_BASE_URL ||
+      (process.env.VERCEL_URL && `https://${process.env.VERCEL_URL}`) ||
+      "http://localhost:3000";
+    const transcriptRes = await fetch(`${baseUrl}/api/stream-transcript`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ callId }),
+    });
+    const transcriptData = await transcriptRes.json();
+    const transcript = transcriptData.transcript;
+
+    if (!transcript) {
+      return Response.json(
+        { success: false, error: "Transcript not found" },
+        { status: 404 }
+      );
+    }
+
+    // Generate summary (your Gemini logic)
+    const { text: summary } = await generateText({
       model: google("gemini-2.0-flash-001"),
       temperature: 0.7,
       system:
@@ -24,30 +45,21 @@ export async function POST(request: Request) {
         ${transcript}
         ---
         `,
-    }).catch((err) => {
-      // Log the error and throw for catch block
-      console.error("Gemini API error:", err);
-      throw err;
     });
 
-    if (meetingId) {
-      await db.collection("meetings").doc(meetingId).update({
-        summary: questions,
-      });
+    // Save summary to Firestore
+    if (meetingId || callId) {
+      await db
+        .collection("meetings")
+        .doc(meetingId || callId)
+        .update({
+          summary,
+        });
     }
 
-    return Response.json(
-      { success: true, summary: questions },
-      { status: 200 }
-    );
+    return Response.json({ success: true, summary }, { status: 200 });
   } catch (error: any) {
-    // Log error details
-    console.error("Error:", error);
-    // If error has a response, log it
-    if (error?.response) {
-      const errorText = await error.response.text?.();
-      console.error("API response:", errorText);
-    }
+    console.error("Summarize API error:", error);
     return Response.json(
       { success: false, error: error?.message || error },
       { status: 500 }
