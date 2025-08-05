@@ -50,11 +50,10 @@ export async function POST(request: Request) {
     });
 
     // Save summary to Firestore
-    if (callId) {
-      await db.collection("meetings").doc(callId).update({
-        summary,
-      });
-    }
+
+    await db.collection("meetings").doc(callId).update({
+      summary,
+    });
 
     console.log("Generated summary:", summary);
 
