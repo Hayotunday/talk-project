@@ -20,6 +20,8 @@ export async function POST(request: Request) {
     const transcriptData = await transcriptRes.json();
     const transcript = transcriptData.transcript;
 
+    console.log("Transcript data:", transcriptData);
+
     if (!transcript) {
       return Response.json(
         { success: false, error: "Transcript not found" },
@@ -53,6 +55,8 @@ export async function POST(request: Request) {
         summary,
       });
     }
+
+    console.log("Generated summary:", summary);
 
     return Response.json({ success: true, summary }, { status: 200 });
   } catch (error: any) {
