@@ -152,7 +152,7 @@ interface MeetingLinkProps {
 }
 
 function MeetingLink({ call }: MeetingLinkProps) {
-  const meetingLink = `${process.env.NEXT_PUBLIC_LOCAL_URL_ORIGIN}/meeting/${call.id}`;
+  const meetingLink = `${process.env.NEXT_PUBLIC_LOCAL_URL_ORIGIN}meeting/${call.id}`;
 
   return (
     <div className="flex flex-col items-center gap-3 text-center p-5 rounded-md shadow shadow-black">

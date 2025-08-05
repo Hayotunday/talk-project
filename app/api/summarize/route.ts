@@ -5,7 +5,7 @@ import { db } from "@/lib/firebase/admin";
 
 export async function POST(request: Request) {
   try {
-    const { callId, meetingId } = await request.json();
+    const { callId } = await request.json();
 
     // Fetch transcript from stream-transcript API
     const baseUrl =
@@ -48,13 +48,10 @@ export async function POST(request: Request) {
     });
 
     // Save summary to Firestore
-    if (meetingId || callId) {
-      await db
-        .collection("meetings")
-        .doc(meetingId || callId)
-        .update({
-          summary,
-        });
+    if (callId) {
+      await db.collection("meetings").doc(callId).update({
+        summary,
+      });
     }
 
     return Response.json({ success: true, summary }, { status: 200 });
