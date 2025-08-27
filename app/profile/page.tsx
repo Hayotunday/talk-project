@@ -5,6 +5,7 @@ import { db } from "@/lib/firebase/client";
 import { getCurrentUser } from "@/lib/actions/auth.action";
 import { doc, getDoc, updateDoc, deleteDoc } from "firebase/firestore";
 import { Loader2, Trash2 } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 interface UserProfile {
   uid: string;
@@ -24,6 +25,8 @@ export default function ProfilePage() {
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const router = useRouter();
 
   useEffect(() => {
     async function fetchUser() {
@@ -87,24 +90,29 @@ export default function ProfilePage() {
       if (selectedPhotoFile) {
         const formData = new FormData();
         formData.append("file", selectedPhotoFile);
-        formData.append(
-          "upload_preset",
-          process.env.NEXT_PUBLIC_CLOUDINARY_PRESET || ""
-        );
         const res = await fetch(
-          `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload`,
+          "/api/cloudinary-upload", // Use our secure, server-side endpoint
           {
             method: "POST",
             body: formData,
           }
         );
         const data = await res.json();
+
+        if (!res.ok) {
+          // Use the error message from Cloudinary's response if available
+          throw new Error(
+            data.error || `Image upload failed with status: ${res.status}`
+          );
+        }
+
         if (data.secure_url) {
           photoUrl = data.secure_url;
         } else {
-          setError("Failed to upload image.");
-          setSaving(false);
-          return;
+          // This case should ideally not be hit if res.ok is true, but it's a good safeguard.
+          throw new Error(
+            "Image upload succeeded but no secure_url was returned."
+          );
         }
       }
 
@@ -116,10 +124,11 @@ export default function ProfilePage() {
       setUser({ ...user, display_name: editName, photo_url: photoUrl });
       setEditPhoto(photoUrl);
       setSelectedPhotoFile(null);
-    } catch (err) {
-      setError("Failed to update profile.");
+    } catch (err: any) {
+      setError(err.message || "Failed to update profile.");
     }
     setSaving(false);
+    router.refresh(); // Refresh the page to reflect changes
   };
 
   const handleDelete = async () => {

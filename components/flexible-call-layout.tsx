@@ -1,13 +1,12 @@
 import useStreamCall from "@/hooks/use-stream-call";
 import {
-  CallControls,
   CancelCallButton,
   PaginatedGridLayout,
-  ParticipantView,
   ScreenShareButton,
   SpeakerLayout,
   ToggleAudioPublishingButton,
   ToggleVideoPublishingButton,
+  useCallStateHooks,
 } from "@stream-io/video-react-sdk";
 import {
   BetweenHorizonalEnd,
@@ -24,22 +23,31 @@ export default function FlexibleCallLayout() {
   const [layout, setLayout] = useState<CallLayout>("speaker-vert");
 
   const call = useStreamCall();
+  const { useLocalParticipant } = useCallStateHooks();
+  const localParticipant = useLocalParticipant();
 
   const router = useRouter();
+
+  const isOwner =
+    localParticipant &&
+    call.state.createdBy &&
+    localParticipant.userId === call.state.createdBy.id;
 
   return (
     <div className="space-y-3 relative h-full w-full">
       <CallLayoutButtons layout={layout} setLayout={setLayout} />
       <CallLayoutView layout={layout} />
-      {/* <CallControls onLeave={() => router.push(`/meeting/${call.id}/left`)} /> */}
       <div className="fixed bottom-3 left-0 right-0 mx-auto w-fit bg-[#19232d] rounded-full p-3 flex flex-row flex-wrap justify-center items-center space-x-3 gap-2">
         <ToggleAudioPublishingButton />
         <ToggleVideoPublishingButton />
         <ScreenShareButton />
-        <CancelCallButton
-          onLeave={() => router.push(`/meeting/${call.id}/left`)}
-        />
-        <EndCallButton />
+        {isOwner ? (
+          <EndCallButton />
+        ) : (
+          <CancelCallButton
+            onLeave={() => router.push(`/meeting/${call.id}/left`)}
+          />
+        )}
       </div>
     </div>
   );

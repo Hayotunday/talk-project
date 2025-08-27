@@ -1,40 +1,39 @@
-import { generateText } from "ai";
 import { google } from "@ai-sdk/google";
-
 import { db } from "@/lib/firebase/admin";
+import { generateText } from "ai";
+import { NextRequest, NextResponse } from "next/server";
 
-export async function POST(request: Request) {
+export async function POST(req: NextRequest) {
   try {
-    const { callId } = await request.json();
+    const { callId } = await req.json();
 
-    // Fetch transcript from stream-transcript API
-    const baseUrl =
-      process.env.NEXT_PUBLIC_BASE_URL ||
-      (process.env.VERCEL_URL && `https://${process.env.VERCEL_URL}`) ||
-      "http://localhost:3000";
-    const transcriptRes = await fetch(`${baseUrl}/api/stream-transcript`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ callId }),
-    });
-    const transcriptData = await transcriptRes.json();
-    const transcript = transcriptData.transcript;
-
-    console.log("Transcript data:", transcriptData);
-
-    if (!transcript) {
-      return Response.json(
-        { success: false, error: "Transcript not found" },
-        { status: 404 }
+    if (!callId) {
+      return NextResponse.json(
+        { error: "Call ID is required" },
+        { status: 400 }
       );
     }
 
-    // Generate summary (your Gemini logic)
+    const meetingRef = db.collection("meetings").doc(callId);
+    const meetingDoc = await meetingRef.get();
+
+    if (!meetingDoc.exists) {
+      return NextResponse.json({ error: "Meeting not found" }, { status: 404 });
+    }
+
+    const transcript = meetingDoc.data()?.transcription;
+
+    if (!transcript) {
+      return NextResponse.json(
+        { error: "Transcript not available for this meeting yet" },
+        { status: 400 }
+      );
+    }
+
     const { text: summary } = await generateText({
-      model: google("gemini-2.0-flash-001"),
-      temperature: 0.7,
-      system:
-        "You are a helpful AI assistant that summarizes meeting transcriptions.",
+      model: google("models/gemini-1.5-flash-latest"),
+      system: `You are a helpful assistant that summarizes meeting transcripts.
+        Provide a concise summary of the following transcript.`,
       prompt: `
         Based on the following meeting transcription, please provide a concise summary.
         The summary should include:
@@ -49,32 +48,19 @@ export async function POST(request: Request) {
         `,
     });
 
-    // Save summary to Firestore
-    try {
-      await db
-        .collection("meetings")
-        .doc(callId)
-        .set({ summary }, { merge: true });
-    } catch (dbError: any) {
-      console.error("Firestore error:", dbError?.message || dbError);
-      return Response.json(
-        { success: false, error: "Failed to save summary to Firestore" },
-        { status: 500 }
-      );
+    if (summary) {
+      await meetingRef.update({ summary });
+      console.log(`Summary for call ${callId} saved to Firebase.`);
     }
 
-    console.log("Generated summary:", summary);
+    // console.log("Summary generated:", summary);
 
-    return Response.json({ success: true, summary }, { status: 200 });
+    return NextResponse.json({ success: true, summary });
   } catch (error: any) {
-    console.error("Summarize API error:", error);
-    return Response.json(
-      { success: false, error: error?.message || error },
+    console.error("Error summarizing transcript:", error);
+    return NextResponse.json(
+      { success: false, error: error.message },
       { status: 500 }
     );
   }
-}
-
-export async function GET() {
-  return Response.json({ success: true, data: "Thank you!" }, { status: 200 });
 }

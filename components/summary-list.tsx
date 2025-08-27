@@ -111,7 +111,6 @@ export default function SummaryList({ filterByUserId }: SummaryListProps) {
 
   return (
     <div className="space-y-4">
-      <h2 className="text-xl font-bold text-center">Meeting Summaries</h2>
       {summaries.length === 0 && (
         <p className="text-center">No meeting summaries available.</p>
       )}

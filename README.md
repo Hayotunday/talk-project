@@ -17,58 +17,6 @@ Talk is a modern, full-stack video conferencing web application built with Next.
 
 ---
 
-## Project Structure
-
-```bash
-app
-├── api
-│   ├── auth
-│   │   ├── [...nextauth]
-│   │   └── route.ts
-│   ├── meetings
-│   │   ├── route.ts
-│   │   └── [id]
-│   │       ├── route.ts
-│   │       └── participants
-│   │           └── route.ts
-│   └── users
-│       └── route.ts
-├── components
-│   ├── Auth
-│   │   ├── Login.tsx
-│   │   └── Register.tsx
-│   ├── Common
-│   │   ├── Button.tsx
-│   │   ├── Input.tsx
-│   │   └── Spinner.tsx
-│   ├── Layout
-│   │   ├── Header.tsx
-│   │   └── Footer.tsx
-│   ├── Meeting
-│   │   ├── Controls.tsx
-│   │   ├── Participants.tsx
-│   │   └── VideoPlayer.tsx
-│   └── User
-│       └── Profile.tsx
-├── lib
-│   ├── firebase.ts
-│   └── stream.ts
-├── middleware.ts
-├── page.tsx
-└── styles
-    ├── globals.css
-    └── tailwind.css
-```
-
-- **`app/api`**: Contains all API routes for authentication, meetings, and user management.
-- **`app/components`**: Reusable components like buttons, inputs, and spinners, as well as feature-specific components for authentication, meetings, and user profiles.
-- **`app/lib`**: Initialization files for Firebase and Stream SDKs.
-- **`app/middleware.ts`**: Custom middleware for handling authentication and authorization.
-- **`app/page.tsx`**: The main entry point of the application.
-- **`app/styles`**: Global and component-specific styles, including Tailwind CSS configuration.
-
----
-
 ## Getting Started
 
 To get started with the project, follow these steps:
@@ -76,8 +24,8 @@ To get started with the project, follow these steps:
 1. **Clone the repository**
 
    ```bash
-   git clone https://github.com/yourusername/talk-app.git
-   cd talk-app
+   git clone https://github.com/Hayotunday/talk-project.git
+   cd talk-project
    ```
 
 2. **Install dependencies**
@@ -95,25 +43,28 @@ To get started with the project, follow these steps:
    Create a `.env.local` file in the root of the project and add your Firebase and Stream credentials:
 
    ```bash
-   FIREBASE_PROJECT_ID=
-   FIREBASE_CLIENT_EMAIL=
-   FIREBASE_PRIVATE_KEY=
+   FIREBASE_PROJECT_ID=your_firebase_admin_project_id
+   FIREBASE_CLIENT_EMAIL=your_firebase_admin_client_email
+   FIREBASE_PRIVATE_KEY=your_firebase_admin_private_key
+
    NEXT_PUBLIC_FIREBASE_API_KEY=your_firebase_api_key
    NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your_firebase_auth_domain
    NEXT_PUBLIC_FIREBASE_PROJECT_ID=your_firebase_project_id
    NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your_firebase_storage_bucket
    NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your_firebase_messaging_sender_id
    NEXT_PUBLIC_FIREBASE_APP_ID=your_firebase_app_id
+
    NEXT_PUBLIC_STREAM_API_KEY=your_stream_api_key
-   NEXT_PUBLIC_STREAM_APP_ID=your_stream_app_id
-   STREAM_SECRET_KEY=
-   STREAM_API_KEY=
-   NEXT_PUBLIC_STREAM_API_KEY=
-   CLOUDINARY_API_KEY=
-   CLOUDINARY_API_SECRET=
-   NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=
-   NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME=
-   GOOGLE_GENERATIVE_AI_API_KEY=
+   STREAM_SECRET_KEY=your_stream_secret_key
+   STREAM_API_KEY=your_stream_api_key
+
+   CLOUDINARY_API_KEY=your_cloudinary_api_key
+   CLOUDINARY_API_SECRET=your_cloudinary_api_secret
+   NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=your_cloudinary_upload_preset
+   NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME=your_cloudinary_cloud_name
+
+   GOOGLE_GENERATIVE_AI_API_KEY=your_google_generative_ai_api_key
+
    NEXT_PUBLIC_LOCAL_URL_ORIGIN=http://localhost:3000
    ```
 

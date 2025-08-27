@@ -252,6 +252,20 @@ function MeetingEndedScreen({ meetingId }: { meetingId: string }) {
           if (!data.summary || data.summary.trim() === "") {
             setSummary(null);
             setIsLoading(true);
+            if (!requestedTranscript) {
+              setRequestedTranscript(true); // Prevent multiple requests
+              fetch("/api/stream-transcript", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ callId: meetingId }),
+              }).catch((error) => {
+                console.error(
+                  "Failed to request transcript/summary generation:",
+                  error
+                );
+                setIsLoading(false); // Stop loading on error
+              });
+            }
           } else {
             setSummary(data.summary);
             setIsLoading(false);
